@@ -7,7 +7,7 @@ ED: https://w3c.github.io/paint-timing/
 TR: https://www.w3.org/TR/paint-timing/
 Status: ED
 Editor: Ian Clelland, Google https://google.com, iclelland@chromium.org, w3cid 76841
-        Noam Rosenthal, Invited Expert, noam@webkit.org, w3cid 121539
+        Noam Rosenthal, Google https://google.com, nrosenthal@chromium.org, w3cid 121539
 Former Editor: Shubhie Panicker, Google https://google.com, panicker@google.com, w3cid 92587
                Nicolás Peña Moreno, Google https://google.com, npm@chromium.org, w3cid 103755
 Repository: w3c/paint-timing
@@ -78,7 +78,7 @@ Much of the purpose of a web browser is to translate HTML, CSS and image
 resources into pixels on a screen for users. Measuring the performance of a web
 page often involves measuring the time it takes to perform these tasks - to
 render content, whether text or image, to the screen. There are many different
-ways to use this timing to make statemements about the performance of a page,
+ways to use this timing to make statements about the performance of a page,
 or about the user experience of loading, but fundamentally all of those ways
 begin with a common means of measuring time.
 
@@ -174,7 +174,7 @@ An [=/element=] |el| is <dfn>paintable</dfn> when all of the following apply:
 * |el| and all of its ancestors' [=used value|used=] [=opacity=] is greater than zero.
 
     NOTE: there could be cases where a <code>paintable</code> [=/element=] would not be visible to the user, for example in the case of text that has the same color as its background.
-    Those elements would still considered as paintable for the purpose of computing [=first contentful paint=].
+    Those elements would still be considered as paintable for the purpose of computing [=first contentful paint=].
 
 * |el|'s [=paintable bounding rect=] intersects with the [=scrolling area=] of the [=document=].
 
@@ -191,8 +191,28 @@ A [=browsing context=] |ctx| is <dfn>paint-timing eligible</dfn> when one of the
     NOTE: this allows user agents to enable paint-timing only for some of the frames, in addition to the main frame, if they so choose.
     For example, a user agent may decide to disable paint-timing for cross-origin iframes, as in some scenarios their paint-timing might reveal information about the main frame.
 
-The {{PaintTimingMixin}} interface {#sec-PaintTimingMixin}
+The Paint Timing Mixin
 =======================================
+
+<div class=non-normative>
+
+<em>This section is non-normative.</em>
+
+The {{PaintTimingMixin}} interface exposes timestamps related to the rendering cycle.
+It is included in [=platform objects=] that extend {{PerformanceEntry}},
+specifically by {{PerformanceElementTiming}}, {{LargestContentfulPaint}}, {{PerformanceEventTiming}}, {{PerformancePaintTiming}}, and {{PerformanceLongAnimationFrameTiming}}.
+
+The {{PaintTimingMixin/paintTime}} attribute represents the timestamp at the end of the [=update the rendering=] loop
+while the {{PaintTimingMixin/presentationTime}} represents an implementation-specific timestamp marked when the frame is presented to the user.
+The [=mark paint timing=] algorithm, called from [=update the rendering=] in the HTML standard, populates both attributes.
+
+Attributes in entries that rely on paint timing, like {{LargestContentfulPaint}}'s {{LargestContentfulPaint/renderTime}} (as well as its {{LargestContentfulPaint/startTime}}),
+usually return the [=default paint timestamp=] rather than one of the specific timestamps, making them agnostic to the implementation-specific nature of {{PaintTimingMixin/presentationTime}}.
+
+</div>
+
+The {{PaintTimingMixin}} interface {#sec-PaintTimingMixin}
+----------------------------------------------------------
 
 <pre class="idl">
     [Exposed=Window]
@@ -225,7 +245,9 @@ The {{PerformancePaintTiming}} interface {#sec-PerformancePaintTiming}
 
 <pre class="idl">
     [Exposed=Window]
-    interface PerformancePaintTiming : PerformanceEntry {};
+    interface PerformancePaintTiming : PerformanceEntry {
+        [Default] object toJSON();
+    };
     PerformancePaintTiming includes PaintTimingMixin;
 </pre>
 
@@ -235,8 +257,9 @@ The {{PerformancePaintTiming}} interface {#sec-PerformancePaintTiming}
     * <code>"first-paint"</code>: for [=first paint=]
     * <code>"first-contentful-paint"</code>: for [=first contentful paint=]
 * The {{PerformanceEntry/entryType}} attribute's getter must return <code>"paint"</code>.
-* The {{PerformanceEntry/startTime}} attribute's getter must return a {{DOMHighResTimeStamp}} of when the paint occured.
+* The {{PerformanceEntry/startTime}} attribute's getter must return a {{DOMHighResTimeStamp}} of when the paint occurred.
 * The {{PerformanceEntry/duration}} attribute's getter must return 0.
+* When <dfn for="PerformancePaintTiming" export>toJSON</dfn> is called, run the [=default toJSON steps=] for {{PerformancePaintTiming}}.
 
 NOTE: A user agent implementing {{PerformancePaintTiming}} would need to include <code>"paint"</code> in {{PerformanceObserver/supportedEntryTypes}} of a [=realm/global object=] whose [=Window/browsing context=] is [=paint-timing eligible=].
 This allows developers to detect support for paint timing for a particular [=browsing context=].
@@ -303,7 +326,7 @@ Each {{Element}} has a <dfn>set of owned text nodes</dfn>, which is an [=ordered
 
 Each {{Document}} has a <dfn>set of previously reported paints</dfn>, which is an [=ordered set=] of [=strings=], initially empty.
 
-Each {{Document}} has an <dfn>images pending rendering</dfn>, which is a [=/list=] of [=pending image records=], initally empty.
+Each {{Document}} has an <dfn>images pending rendering</dfn>, which is a [=/list=] of [=pending image records=], initially empty.
 
 Each {{Document}} has a <dfn>set of elements with rendered text</dfn>, which is an [=ordered set=] of {{Element}}s, initially empty.
 
